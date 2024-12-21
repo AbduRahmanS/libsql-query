@@ -1,6 +1,9 @@
+use std::env;
+
 use crate::query_params::QueryParams;
 use crate::table::Table;
 use crate::utils::construct_statement;
+use dotenvy::dotenv;
 use libsql::{Builder, Connection, Result as QueryResult, Rows, Transaction};
 
 pub struct Client {
@@ -9,7 +12,10 @@ pub struct Client {
 }
 
 impl Client {
-    pub async fn new(db_path: String) -> Self {
+    pub async fn new() -> Self {
+        dotenv().expect("Failed to load .env file");
+        let db_path = env::var("DB_PATH").expect("DB_PATH not set in .env");
+
         let conn = Builder::new_local(db_path)
             .build()
             .await
