@@ -13,9 +13,66 @@
 
 Add `libsql-query` to your `Cargo.toml` dependencies:
 
+```toml
+[dependencies]
+libsql-query = "0.1.0"
+```
+
+## Usage
+
+### Connecting to a Database
+
+#### 1. Add the `DB_PATH` to your environment variables.
+
+#### 2. Create a libsql-query client instance.
+
+```rust
+use libsql_query::client::Client;
+let client = Client::new().await
+```
+
+#### 3. Insert data into a table.
+
+```rust
+let data = serde_json::json!({
+    "name": "Alice",
+    "age": 30,
+    "email": "alice@company.com"
+});
+let rows = client.table("users").insert(data).await?;
+// rows: libsql::Rows
+```
+
+#### 4. Retrieve data from a table.
+
+```rust
+let rows = client.table("users").select(serde_json::json!({"id": 1})).await?;
+// rows: libsql::Rows
+```
+
+### Transactions
+
+```rust
+let mut client = Client::new().await; // Client should be mutable
+client.begin_transaction().await;
+let result = async {
+    // Perform operations like usualy
+    client.table("users").update(data).await?;
+    client.table("users").delete().await?;
+};
+
+if result.is_ok() {
+    client.commit().await;
+} else {
+    client.rollback().await;
+}
+```
+
 ## Roadmap
 
-- [ ] **Improve Documentation**: Enhance documentation with more examples and detailed explanations.
+> **Note:** No particular order and subject to change.
+
+- [x] **Improve Documentation**: Enhance documentation with more examples and detailed explanations.
 - [ ] **Testing**: Implement comprehensive tests to ensure the library's correctness and reliability.
 - [ ] **Error Handling**: Enhance error handling to cover more edge cases and provide better diagnostics.
 - [ ] **Advanced Queries**: Support advanced queries like joins, subqueries, and aggregations.
