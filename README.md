@@ -20,8 +20,6 @@ libsql-query = "0.1.0"
 
 ## Usage
 
-### Connecting to a Database
-
 #### 1. Add the `DB_PATH` to your environment variables.
 
 #### 2. Create a libsql-query client instance.
@@ -50,7 +48,7 @@ let rows = client.table("users").select(json!({"id": 1})).await?;
 // rows: libsql::Rows
 ```
 
-### Transactions
+#### 5. Transactions
 
 ```rust
 let mut client = Client::new().await; // Client should be mutable
