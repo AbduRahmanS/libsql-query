@@ -5,7 +5,7 @@
 ## Features
 
 - **Easy-to-use API**: Simplifies database interactions with straightforward methods.
-- **JSON Integration**: Utilizes `serde_json::Value` for seamless JSON data handling.
+- **JSON Integration**: Utilizes `serde_json` for seamless JSON data handling.
 - **Transaction Support**: Provides methods for transaction management.
 - **Parameterized Queries**: Protects against SQL injection with parameterized queries.
 
@@ -34,7 +34,7 @@ let client = Client::new().await
 #### 3. Insert data into a table.
 
 ```rust
-let data = serde_json::json!({
+let data = json!({
     "name": "Alice",
     "age": 30,
     "email": "alice@company.com"
@@ -46,7 +46,7 @@ let rows = client.table("users").insert(data).await?;
 #### 4. Retrieve data from a table.
 
 ```rust
-let rows = client.table("users").select(serde_json::json!({"id": 1})).await?;
+let rows = client.table("users").select(json!({"id": 1})).await?;
 // rows: libsql::Rows
 ```
 
