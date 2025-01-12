@@ -1,27 +1,29 @@
 use crate::query_params::{Operation, QueryParams};
-use libsql::Value as SqlValue;
+use libsql::Value as SQLValue;
 use serde_json::Value;
 
-pub fn json_to_sql_value(json_value: &Value) -> SqlValue {
+/// Converts a Serde JSON value into a libsql `SQLValue`.
+pub fn json_to_sql_value(json_value: &Value) -> SQLValue {
     match json_value {
-        Value::String(s) => SqlValue::from(s.clone()),
+        Value::String(s) => SQLValue::from(s.clone()),
         Value::Number(n) => {
             if let Some(i) = n.as_i64() {
-                SqlValue::from(i)
+                SQLValue::from(i)
             } else if let Some(f) = n.as_f64() {
-                SqlValue::from(f)
+                SQLValue::from(f)
             } else {
                 panic!("Unsupported number type")
             }
         }
-        Value::Bool(b) => SqlValue::from(*b),
-        Value::Null => SqlValue::Null,
+        Value::Bool(b) => SQLValue::from(*b),
+        Value::Null => SQLValue::Null,
         Value::Array(_) => todo!(),
         Value::Object(_) => todo!(),
     }
 }
 
-fn build_condition_string(conditions: &Value) -> (String, Vec<SqlValue>) {
+/// Constructs a WHERE clause string and corresponding parameter values from JSON.
+fn build_condition_string(conditions: &Value) -> (String, Vec<SQLValue>) {
     if conditions == &Value::Null {
         return ("".to_string(), vec![]);
     }
@@ -31,11 +33,12 @@ fn build_condition_string(conditions: &Value) -> (String, Vec<SqlValue>) {
         .map(|k| format!("{} = ?", k))
         .collect::<Vec<_>>()
         .join(" AND ");
-    let cond_params = map.values().map(|v| json_to_sql_value(v)).collect();
+    let cond_params = map.values().map(json_to_sql_value).collect();
     (format!(" WHERE {};", cond_str), cond_params)
 }
 
-fn build_update_string(data: &Value) -> (String, Vec<SqlValue>) {
+/// Builds an UPDATE clause string, filtering out null fields, and collects parameters.
+fn build_update_string(data: &Value) -> (String, Vec<SQLValue>) {
     let map = data.as_object().unwrap();
     let filtered_map: serde_json::Map<String, Value> = map
         .iter()
@@ -47,16 +50,14 @@ fn build_update_string(data: &Value) -> (String, Vec<SqlValue>) {
         .map(|k| format!("{} = ?", k))
         .collect::<Vec<_>>()
         .join(", ");
-    let update_params = filtered_map
-        .values()
-        .map(|v| json_to_sql_value(v))
-        .collect();
+    let update_params = filtered_map.values().map(json_to_sql_value).collect();
     (update_str, update_params)
 }
 
-pub fn construct_statement(params: QueryParams) -> (String, Vec<SqlValue>) {
+/// Creates a complete SQL statement based on the given `QueryParams`.
+pub fn construct_statement(params: QueryParams) -> (String, Vec<SQLValue>) {
     let mut query = String::new();
-    let mut query_params: Vec<SqlValue> = Vec::new();
+    let mut query_params: Vec<SQLValue> = Vec::new();
 
     match params.operation {
         Operation::Select => {
@@ -75,7 +76,7 @@ pub fn construct_statement(params: QueryParams) -> (String, Vec<SqlValue>) {
                 "INSERT INTO {} ({}) VALUES ({}) RETURNING *;",
                 params.table_name, columns, placeholders
             ));
-            query_params.extend(data.values().map(|v| json_to_sql_value(v)));
+            query_params.extend(data.values().map(json_to_sql_value));
         }
         Operation::Update => {
             let (update_str, update_params) = build_update_string(&params.data);

@@ -6,12 +6,14 @@ use crate::utils::construct_statement;
 use dotenvy::dotenv;
 use libsql::{Builder, Connection, Result as QueryResult, Rows, Transaction};
 
+/// Provides a connection to the database and manages transactions.
 pub struct Client {
     pub conn: Connection,
     pub tx: Option<Transaction>,
 }
 
 impl Client {
+    /// Creates a new `Client` instance, connecting to the configured database.
     pub async fn new() -> Self {
         dotenv().expect("Failed to load .env file");
         let db_path = env::var("DB_PATH").expect("DB_PATH not set in .env");
@@ -25,6 +27,7 @@ impl Client {
         Client { conn, tx: None }
     }
 
+    /// Begins a database transaction.
     pub async fn begin_transaction(&mut self) -> Result<(), libsql::Error> {
         if self.tx.is_some() {
             return Err(libsql::Error::SqliteFailure(
@@ -42,6 +45,7 @@ impl Client {
         Ok(())
     }
 
+    /// Commits the open transaction, if any.
     pub async fn commit(self) -> Result<(), libsql::Error> {
         match self.tx {
             Some(tx) => tx.commit().await,
@@ -49,6 +53,7 @@ impl Client {
         }
     }
 
+    /// Rolls back the current transaction, if any exists.
     pub async fn rollback(&mut self) -> Result<(), libsql::Error> {
         if let Some(tx) = self.tx.take() {
             println!("Rollback Transaction");
@@ -58,6 +63,7 @@ impl Client {
         }
     }
 
+    /// Returns a `Table` instance for the specified table name.
     pub fn table(&self, table_name: &str) -> Table {
         Table {
             client: self,
@@ -65,6 +71,7 @@ impl Client {
         }
     }
 
+    /// Executes a SQL query built from the provided `QueryParams`.
     pub async fn query(&self, params: QueryParams) -> QueryResult<Rows> {
         let statement = construct_statement(params);
         match &self.tx {
